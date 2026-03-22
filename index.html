@@ -1,0 +1,1436 @@
+<!DOCTYPE html>
+<html lang="si" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>To Do List</title>
+<link rel="manifest" href="/HAbit-Track/manifest.json">
+<meta name="theme-color" content="#1d5e58">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="/HAbit-Track/icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Sinhala:wght@400;500;600;700&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ── FIREBASE CONFIG NOTE ──
+   Replace FIREBASE_URL below with your Firebase Realtime Database URL
+   e.g. https://your-project-default-rtdb.firebaseio.com
+*/
+[data-theme="light"]{
+  --teal:#2a7a72;--teal-l:#3a9e94;--teal-d:#1d5e58;--teal-bg:#e8f5f4;
+  --high:#e74c3c;--high-bg:#fdf0ef;--med:#e67e22;--med-bg:#fef5ec;
+  --low:#27ae60;--low-bg:#eafaf1;
+  --txt:#1a2e2c;--muted:#7a9490;--bdr:#d0e8e5;--bg:#f5fafa;--card:#fff;
+  --shad:0 2px 12px rgba(42,122,114,.09);--rhov:#f8fbfb;--rbdr:#f0f6f5;
+  --dh-bg:#eafaf6;--dh-c:#1a7a50;
+  --mv-bg:#eef6ff;--mv-b:#bdd7f8;--mv-c:#2563a8;
+  --mo-ov:rgba(0,0,0,.45);--mo-bg:#fff;
+}
+[data-theme="dark"]{
+  --teal:#3ab8ad;--teal-l:#4dd0c4;--teal-d:#2a9089;--teal-bg:#0e2e2c;
+  --high:#f17066;--high-bg:#2d1a19;--med:#f0963a;--med-bg:#2a1d0e;
+  --low:#4ecb78;--low-bg:#0d2318;
+  --txt:#e2f0ee;--muted:#6a9490;--bdr:#1e4a46;--bg:#0d1f1e;--card:#132422;
+  --shad:0 2px 16px rgba(0,0,0,.4);--rhov:#1a3230;--rbdr:#1a3230;
+  --dh-bg:#0d2318;--dh-c:#4ecb78;
+  --mv-bg:#0e1e35;--mv-b:#1e3a6a;--mv-c:#7ab4f8;
+  --mo-ov:rgba(0,0,0,.72);--mo-bg:#132422;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Poppins','Noto Sans Sinhala',sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;transition:background .25s,color .25s;}
+
+.app-header{background:linear-gradient(135deg,var(--teal-d) 0%,var(--teal) 60%,var(--teal-l) 100%);color:#fff;padding:16px 32px 0;display:flex;flex-direction:column;}
+.header-top{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;padding-bottom:14px;}
+.app-header h1{font-size:26px;font-weight:800;letter-spacing:-1px;display:flex;align-items:center;gap:10px;}
+.header-right{display:flex;gap:8px;align-items:center;}
+.btn-outline{background:transparent;color:#fff;border:2px solid rgba(255,255,255,.6);padding:6px 14px;border-radius:8px;cursor:pointer;font-family:inherit;font-size:12px;font-weight:600;transition:all .18s;}
+.btn-outline:hover{background:rgba(255,255,255,.18);}
+.theme-btn{width:32px;height:32px;border-radius:50%;border:2px solid rgba(255,255,255,.5);background:rgba(255,255,255,.15);color:#fff;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;transition:all .18s;}
+.theme-btn:hover{background:rgba(255,255,255,.3);}
+.sync-dot{width:9px;height:9px;border-radius:50%;background:#f0963a;transition:background .3s;flex-shrink:0;cursor:default;}
+
+.tabs{display:flex;gap:0;padding:0 32px;}
+.tab-btn{padding:8px 20px;border:none;background:rgba(255,255,255,.12);color:rgba(255,255,255,.8);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;border-radius:8px 8px 0 0;transition:all .18s;display:flex;align-items:center;gap:6px;}
+.tab-btn:hover{background:rgba(255,255,255,.22);}
+.tab-btn.active{background:var(--bg);color:var(--teal-d);}
+[data-theme="dark"] .tab-btn.active{color:var(--teal);}
+.tab-badge{background:rgba(255,255,255,.3);border-radius:999px;padding:1px 7px;font-size:10px;}
+.tab-btn.active .tab-badge{background:var(--teal);color:#fff;}
+
+.month-strip{background:var(--teal-d);padding:7px 32px 9px;display:flex;align-items:center;gap:8px;overflow-x:auto;scrollbar-width:none;}
+.month-strip::-webkit-scrollbar{display:none;}
+.month-label{color:rgba(255,255,255,.75);font-size:12px;font-weight:600;white-space:nowrap;margin-right:4px;}
+.month-nav{background:rgba(255,255,255,.15);color:#fff;border:none;width:26px;height:26px;border-radius:6px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;transition:background .15s;}
+.month-nav:hover{background:rgba(255,255,255,.3);}
+.day-btn{min-width:34px;height:34px;border-radius:7px;border:none;background:rgba(255,255,255,.12);color:rgba(255,255,255,.85);font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative;}
+.day-btn:hover{background:rgba(255,255,255,.25);}
+.day-btn.selected{background:#fff;color:var(--teal-d);}
+.day-btn.today{outline:2px solid rgba(255,255,255,.6);}
+.day-btn.has-tasks::after{content:'•';position:absolute;bottom:1px;left:50%;transform:translateX(-50%);font-size:9px;color:#a8e6e0;}
+
+.main{padding:18px 32px;max-width:1120px;margin:0 auto;}
+.date-title{font-size:17px;font-weight:700;color:var(--teal);margin-bottom:3px;}
+.date-sub{font-size:12px;color:var(--muted);margin-bottom:12px;}
+.moved-notice{background:var(--mv-bg);border:1px solid var(--mv-b);border-radius:9px;padding:8px 14px;font-size:12px;color:var(--mv-c);margin-bottom:10px;display:none;}
+
+.add-task-card{background:var(--card);border-radius:12px;border:1.5px dashed var(--bdr);padding:13px 17px;margin-bottom:16px;box-shadow:var(--shad);transition:background .25s;}
+.add-task-card h3{font-size:13px;font-weight:700;color:var(--teal);margin-bottom:9px;}
+.add-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;}
+.ff{padding:6px 10px;border:1.5px solid var(--bdr);border-radius:7px;font-family:inherit;font-size:12px;color:var(--txt);background:var(--bg);outline:none;transition:border .15s,background .25s,color .25s;}
+.ff:focus{border-color:var(--teal);}
+.f-task{flex:2;min-width:160px;}
+.f-sel{flex:1;min-width:100px;}
+.f-time{width:58px;}
+.f-ampm{width:68px;}
+.f-dur{width:64px;}
+.second-row{display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
+.f-notes{flex:1;min-width:150px;}
+.everyday-wrap{display:flex;align-items:center;gap:5px;white-space:nowrap;}
+.everyday-wrap label{font-size:12px;color:var(--muted);cursor:pointer;user-select:none;}
+.toggle-cb{appearance:none;width:32px;height:18px;background:var(--bdr);border-radius:999px;cursor:pointer;position:relative;transition:background .2s;flex-shrink:0;}
+.toggle-cb:checked{background:var(--teal);}
+.toggle-cb::after{content:'';position:absolute;top:3px;left:3px;width:12px;height:12px;border-radius:50%;background:#fff;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.2);}
+.toggle-cb:checked::after{left:17px;}
+.btn-teal{background:var(--teal);color:#fff;padding:6px 14px;border-radius:7px;border:none;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;transition:background .15s;white-space:nowrap;}
+.btn-teal:hover{background:var(--teal-l);}
+
+.section{margin-bottom:14px;}
+.section-header{display:flex;align-items:center;gap:8px;padding:7px 13px;border-radius:9px;margin-bottom:7px;font-weight:700;font-size:13px;}
+.section-done .section-header{background:var(--dh-bg);color:var(--dh-c);border-left:4px solid var(--low);}
+.count-badge{margin-left:auto;background:rgba(0,0,0,.09);border-radius:999px;padding:1px 8px;font-size:11px;}
+[data-theme="dark"] .count-badge{background:rgba(255,255,255,.10);}
+.num-cell{color:var(--muted);font-size:11px;font-weight:600;text-align:right;padding-right:5px;white-space:nowrap;}
+
+.task-table{width:100%;border-collapse:collapse;}
+.task-table th{text-align:left;padding:4px 9px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--bdr);border-right:1px solid var(--bdr);}
+.task-table th:last-child{border-right:none;}
+.task-table td{padding:3px 9px;font-size:12px;border-bottom:1px solid var(--rbdr);border-right:1px solid var(--rbdr);vertical-align:middle;line-height:1.25;}
+.task-table td:last-child{border-right:none;}
+.task-table tr:last-child td{border-bottom:none;}
+.task-table tbody tr:hover td{background:var(--rhov);}
+.task-table tr.done-row td{opacity:.5;}
+.task-table tr.done-row .t-name{text-decoration:line-through;color:var(--muted);}
+
+.task-table tr.editing td{background:var(--teal-bg)!important;}
+[data-theme="dark"] .task-table tr.editing td{background:#0e2e2c!important;}
+.edit-input{padding:3px 6px;border:1.5px solid var(--teal);border-radius:5px;font-family:inherit;font-size:12px;color:var(--txt);background:var(--card);outline:none;width:100%;}
+.edit-select{padding:3px 5px;border:1.5px solid var(--teal);border-radius:5px;font-family:inherit;font-size:11px;color:var(--txt);background:var(--card);outline:none;}
+.btn-save{background:var(--teal);color:#fff;border:none;border-radius:5px;padding:3px 9px;font-size:11px;font-weight:700;cursor:pointer;}
+.btn-cancel-edit{background:var(--bg);color:var(--muted);border:1px solid var(--bdr);border-radius:5px;padding:3px 7px;font-size:11px;cursor:pointer;}
+
+.print-date-bar{display:none;}
+@media print{
+  .print-date-bar{display:flex;justify-content:space-between;align-items:baseline;padding:5px 0 7px;border-bottom:1.5px solid #2a7a72;margin-bottom:8px;}
+  .print-date-bar .pd-title{font-size:17px;font-weight:800;color:#2a7a72;}
+  .print-date-bar .pd-date{font-size:12px;color:#444;font-weight:600;}
+}
+
+.pri-badge{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:999px;font-size:10px;font-weight:700;white-space:nowrap;}
+.pri-high{background:var(--high-bg);color:var(--high);border:1px solid #f5b7b1;}
+.pri-med {background:var(--med-bg); color:var(--med); border:1px solid #f8c68c;}
+.pri-low {background:var(--low-bg); color:var(--low); border:1px solid #a9dfbf;}
+[data-theme="dark"] .pri-high{border-color:#6a2a24;}
+[data-theme="dark"] .pri-med {border-color:#6a3a10;}
+[data-theme="dark"] .pri-low {border-color:#1a4a28;}
+
+.status-badge{display:inline-flex;align-items:center;padding:2px 7px;border-radius:999px;font-size:10px;font-weight:700;white-space:nowrap;}
+.badge-todo{background:#fff3e0;color:#b35c00;border:1px solid #f8c68c;}
+.badge-done{background:#eafaf1;color:#1a7a50;border:1px solid #a9dfbf;}
+[data-theme="dark"] .badge-todo{background:#2a1d0e;color:#f0963a;border-color:#5a3810;}
+[data-theme="dark"] .badge-done{background:#0d2318;color:#4ecb78;border-color:#1a4a28;}
+
+.time-range{font-size:11px;font-weight:600;color:var(--teal);white-space:nowrap;}
+.moved-tag{font-size:9px;background:var(--mv-bg);color:var(--mv-c);border-radius:3px;padding:1px 5px;margin-left:4px;border:1px solid var(--mv-b);}
+.date-tag{font-size:10px;color:var(--muted);background:var(--bg);border:1px solid var(--bdr);border-radius:4px;padding:1px 5px;margin-left:4px;}
+
+.action-btns{display:flex;gap:3px;}
+.action-btn{width:22px;height:22px;border:none;border-radius:5px;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;transition:background .13s;font-weight:700;}
+.btn-complete{background:#eafaf1;color:#27ae60;} .btn-complete:hover{background:#d4f0e3;}
+.btn-undo{background:#fff3e0;color:#b35c00;font-size:11px;} .btn-undo:hover{background:#ffe5bb;}
+.btn-edit{background:var(--teal-bg);color:var(--teal);} .btn-edit:hover{background:#c5e8e4;}
+.btn-move-next{background:#eef0f7;color:#4a5568;font-size:13px;} .btn-move-next:hover{background:#dde2f0;}
+.btn-delete{background:#fdf0ef;color:#e74c3c;} .btn-delete:hover{background:#fce4e1;}
+[data-theme="dark"] .btn-complete{background:#0d2318;color:#4ecb78;}
+[data-theme="dark"] .btn-undo{background:#2a1d0e;color:#f0963a;}
+[data-theme="dark"] .btn-edit{background:#0e2e2c;color:var(--teal);}
+[data-theme="dark"] .btn-move-next{background:#1a2535;color:#90aac8;}
+[data-theme="dark"] .btn-delete{background:#2d1a19;color:#f17066;}
+.btn-miss{background:#fdf3ff;color:#9333ea;font-size:13px;font-weight:700;}
+.btn-miss:hover{background:#f3e8ff;}
+[data-theme="dark"] .btn-miss{background:#2d1a3a;color:#c084fc;}
+.day-btn.offday{background:rgba(240,150,58,.35);color:#fff;}
+.day-btn.offday.selected{background:#f0963a;color:#fff;}
+.offday-active-btn{background:#f0963a!important;color:#fff!important;border-color:#f0963a!important;}
+.offday-banner{background:#fef5ec;border:1px solid #f8c68c;border-radius:9px;padding:7px 14px;font-size:12px;color:#b35c00;margin-bottom:10px;display:none;}
+[data-theme="dark"] .badge-miss{background:#2d1a3a;color:#c084fc;border-color:#7e22ce;}
+[data-theme="dark"] .badge-skip{background:#1e1535;color:#a78bfa;border-color:#4c3a8a;}
+.skip-reason{font-size:10px;color:#6b46c1;background:#f3f0ff;border-radius:4px;padding:1px 6px;margin-left:4px;border:1px solid #c4b5fd;display:inline-block;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle;}
+[data-theme="dark"] .skip-reason{background:#1e1535;color:#a78bfa;border-color:#4c3a8a;}
+.btn-skip{background:#f3f0ff;color:#6b46c1;font-size:11px;}
+.btn-skip:hover{background:#ede9fe;}
+[data-theme="dark"] .btn-skip{background:#1e1535;color:#a78bfa;}
+
+/* ── MOBILE RESPONSIVE ── */
+@media(max-width:600px){
+  .app-header{padding:12px 14px 0;}
+  .app-header h1{font-size:20px;}
+  .header-top{padding-bottom:10px;}
+  .btn-outline{padding:5px 10px;font-size:11px;}
+  .tabs{padding:0 14px;}
+  .tab-btn{padding:7px 12px;font-size:12px;}
+  .month-strip{padding:6px 14px 8px;}
+  .main{padding:12px 14px;}
+  .add-task-card{padding:11px 13px;}
+  .add-row{gap:5px;}
+  .ff{padding:7px 9px;font-size:13px;}
+  .f-task{min-width:100%;flex:none;}
+  .f-sel{min-width:calc(50% - 3px);flex:none;}
+  .f-time{width:calc(33% - 4px);}
+  .f-ampm{width:calc(34% - 4px);}
+  .f-dur{width:calc(50% - 3px);}
+  .f-notes{min-width:100%;}
+  .second-row{gap:5px;}
+  .btn-teal{width:100%;justify-content:center;padding:9px;}
+  .everyday-wrap{width:100%;}
+  /* Mobile: cards instead of table */
+  .task-table{display:block;}
+  .task-table thead{display:none;}
+  .task-table tbody{display:flex;flex-direction:column;gap:7px;}
+  .task-table tr{display:flex;flex-wrap:wrap;gap:4px 8px;padding:9px 11px;background:var(--card);border-radius:10px;border:1px solid var(--bdr);align-items:center;}
+  .task-table tr.done-row{opacity:.55;}
+  .task-table td{display:block;padding:0;border:none!important;font-size:12px;line-height:1.4;}
+  .task-table td:last-child{border:none;}
+  .task-table tr:last-child td{border:none;}
+  .t-name-cell{width:100%;font-weight:600;font-size:13px;color:var(--txt);}
+  .task-table tr.done-row .t-name-cell{text-decoration:line-through;color:var(--muted);}
+  .num-cell{display:none!important;}
+  .action-btns{gap:5px;}
+  .action-btn{width:28px;height:28px;font-size:14px;}
+  .section-header{font-size:12px;padding:7px 11px;}
+  .all-tasks-toolbar{flex-direction:column;align-items:stretch;}
+  .all-tasks-toolbar select,.all-tasks-toolbar input{width:100%;}
+  .date-tag{display:none;}
+}
+@media(max-width:600px)and(min-width:0px){
+  .task-table td.action-cell{width:100%;display:flex;justify-content:flex-end;margin-top:3px;}
+}
+
+.all-tasks-toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px;}
+.all-tasks-toolbar select,.all-tasks-toolbar input{padding:5px 9px;border:1.5px solid var(--bdr);border-radius:7px;font-family:inherit;font-size:12px;color:var(--txt);background:var(--card);outline:none;}
+.all-tasks-toolbar select:focus,.all-tasks-toolbar input:focus{border-color:var(--teal);}
+
+.modal-overlay{display:none;position:fixed;inset:0;background:var(--mo-ov);z-index:1000;align-items:center;justify-content:center;}
+.modal-overlay.active{display:flex;}
+.modal-box{background:var(--mo-bg);border:1px solid var(--bdr);border-radius:14px;padding:24px 28px;max-width:340px;width:90%;box-shadow:0 8px 40px rgba(0,0,0,.3);text-align:center;}
+.modal-icon{font-size:30px;margin-bottom:7px;}
+.modal-title{font-size:14px;font-weight:700;color:var(--txt);margin-bottom:5px;}
+.modal-msg{font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.6;}
+.modal-task-name{font-size:13px;font-weight:600;color:var(--high);background:var(--high-bg);border-radius:7px;padding:6px 12px;margin-bottom:16px;word-break:break-word;}
+.modal-btns{display:flex;gap:8px;justify-content:center;}
+.modal-btn-cancel{padding:7px 18px;border-radius:7px;border:1.5px solid var(--bdr);background:transparent;color:var(--muted);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;}
+.modal-btn-confirm{padding:7px 18px;border-radius:7px;border:none;background:var(--high);color:#fff;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;}
+
+#toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--teal);color:#fff;padding:8px 18px;border-radius:20px;font-size:12px;font-weight:600;z-index:2000;box-shadow:0 4px 18px rgba(0,0,0,.2);transition:opacity .4s;pointer-events:none;opacity:0;max-width:90%;text-align:center;}
+
+@media print{
+  body{background:#fff!important;color:#000!important;}
+  .no-print,.tabs,.month-strip,.add-task-card,.moved-notice,.modal-overlay,.all-tasks-toolbar{display:none!important;}
+  .app-header{display:none!important;}
+  .main{padding:4px 10px;max-width:100%;}
+  .action-btns{display:none;}
+  .task-table th,.task-table td{padding:4px 7px;font-size:10px;border-color:#ccc;}
+  .task-table tr.done-row td{opacity:1!important;color:#333!important;}
+  .task-table tr.done-row .t-name-cell,.task-table tr.done-row .t-name{color:#555!important;}
+  .section-header{padding:5px 9px;font-size:11px;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  .pri-badge,.status-badge,.badge-done,.badge-miss{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  .date-title,.date-sub{display:none;}
+  #tab-all{display:none!important;}
+  #tab-calendar{display:block!important;}
+  @page{size:A4;margin:8mm 10mm;}
+}
+</style>
+</head>
+<body>
+<div id="toast"></div>
+
+<!-- Done Note Modal -->
+<div class="modal-overlay no-print" id="done-note-modal">
+  <div class="modal-box">
+    <div class="modal-icon">✅</div>
+    <div class="modal-title">සම්පූර්ණ කළා!</div>
+    <div class="modal-msg">අදට විශේෂ සටහනක් add කරන්නද? <span style="color:var(--muted)">(optional)</span></div>
+    <div class="modal-task-name" id="done-note-task-name"></div>
+    <textarea id="done-note-input" placeholder="e.g. අදට විතරක් බිව්වා, ටිකක් අමාරු වුනා..."
+      style="width:100%;padding:8px 10px;border:1.5px solid var(--bdr);border-radius:8px;font-family:inherit;font-size:13px;color:var(--txt);background:var(--bg);outline:none;resize:none;min-height:68px;margin-bottom:14px;"></textarea>
+    <div class="modal-btns">
+      <button class="modal-btn-cancel" onclick="closeDoneNoteModal()">Skip</button>
+      <button class="modal-btn-confirm" style="background:var(--teal);" onclick="confirmDoneNote()">✅ Done කරන්න</button>
+    </div>
+    <div style="font-size:11px;color:var(--muted);margin-top:8px;">Ctrl+Enter හෝ button click</div>
+  </div>
+</div>
+
+<!-- Miss Reason Modal (everyday tasks only) -->
+<div class="modal-overlay no-print" id="miss-modal">
+  <div class="modal-box">
+    <div class="modal-icon">✗</div>
+    <div class="modal-title">කරගන්න බැරි වුනු හේතුව</div>
+    <div class="modal-msg">අද කරගන්න නොහැකි වූ හේතුව ලියන්නද? <span style="color:var(--muted)">(optional)</span></div>
+    <div class="modal-task-name" id="miss-task-name"></div>
+    <textarea id="miss-reason-input" placeholder="e.g. නිදා ගිය නිසා, කාලය නොතිබුණු නිසා, අමතක වුනා..."
+      style="width:100%;padding:8px 10px;border:1.5px solid var(--bdr);border-radius:8px;font-family:inherit;font-size:13px;color:var(--txt);background:var(--bg);outline:none;resize:none;min-height:68px;margin-bottom:14px;"></textarea>
+    <div class="modal-btns">
+      <button class="modal-btn-cancel" onclick="closeMissModal()">අවලංගු කරන්න</button>
+      <button class="modal-btn-confirm" style="background:#9333ea;" onclick="confirmMiss()">✗ Miss සටහන් කරන්න</button>
+    </div>
+  </div>
+</div>
+
+<!-- Move Next / Reason Modal -->
+<div class="modal-overlay no-print" id="skip-modal">
+  <div class="modal-box">
+    <div class="modal-icon">→</div>
+    <div class="modal-title">ඊළඟ දවසට ගෙනියනවාද?</div>
+    <div class="modal-msg">කළ නොහැකි වූ හේතුව ලියන්නද? <span style="color:var(--muted)">(optional)</span></div>
+    <div class="modal-task-name" id="skip-task-name"></div>
+    <textarea id="skip-reason-input" placeholder="e.g. නිදා ගිය නිසා, කාලය නොතිබුණු නිසා..."
+      style="width:100%;padding:8px 10px;border:1.5px solid var(--bdr);border-radius:8px;font-family:inherit;font-size:13px;color:var(--txt);background:var(--bg);outline:none;resize:none;min-height:68px;margin-bottom:14px;"></textarea>
+    <div class="modal-btns">
+      <button class="modal-btn-cancel" onclick="closeSkipModal()">අවලංගු කරන්න</button>
+      <button class="modal-btn-confirm" onclick="confirmSkip()">→ ගෙනියන්න</button>
+    </div>
+    <div style="font-size:11px;color:var(--muted);margin-top:8px;">Ctrl+Enter හෝ button click</div>
+  </div>
+</div>
+
+<!-- Delete Modal -->
+<div class="modal-overlay no-print" id="delete-modal">
+  <div class="modal-box">
+    <div class="modal-icon">🗑️</div>
+    <div class="modal-title">කාර්යය මකන්නද?</div>
+    <div class="modal-msg">පහත කාර්යය ස්ථිරවම මකා දැමේ.</div>
+    <div class="modal-task-name" id="modal-task-name"></div>
+    <div class="modal-btns">
+      <button class="modal-btn-cancel" onclick="closeModal()">අවලංගු කරන්න</button>
+      <button class="modal-btn-confirm" onclick="confirmDelete()">ඔව්, මකන්න</button>
+    </div>
+  </div>
+</div>
+
+<!-- Header -->
+<div class="app-header no-print">
+  <div class="header-top">
+    <h1>📋 To Do List</h1>
+    <div class="header-right">
+      <div class="sync-dot" id="sync-dot" title="Connecting..."></div>
+      <button class="theme-btn" id="refresh-btn" onclick="manualRefresh()" title="Refresh" style="font-size:15px;">🔄</button>
+      <button class="theme-btn" id="theme-btn" onclick="toggleTheme()">🌙</button>
+      <button class="btn-outline" onclick="window.print()">🖨️ Print A4</button>
+    </div>
+  </div>
+  <div class="tabs">
+    <button class="tab-btn active" id="tbtn-calendar" onclick="switchTab('calendar')">📅 දිනය <span class="tab-badge" id="cal-badge">0</span></button>
+    <button class="tab-btn" id="tbtn-all" onclick="switchTab('all')">📋 සියලු කාර්ය <span class="tab-badge" id="all-badge">0</span></button>
+    <button class="tab-btn" id="tbtn-offday" onclick="switchTab('offday')">🌟 Off Day <span class="tab-badge" id="offday-badge">0</span></button>
+  </div>
+</div>
+
+<!-- Calendar Tab -->
+<div id="tab-calendar">
+  <div class="month-strip no-print">
+    <button class="month-nav" onclick="prevMonth()">‹</button>
+    <span class="month-label" id="month-label"></span>
+    <div id="day-strip" style="display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;"></div>
+    <button class="month-nav" onclick="nextMonth()">›</button>
+  </div>
+  <div class="main">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:6px;">
+      <div>
+        <div class="date-title" id="date-title"></div>
+        <div class="date-sub" id="date-sub"></div>
+      </div>
+      <button id="offday-toggle-btn" class="no-print" onclick="toggleOffDay()"
+        style="padding:6px 14px;border-radius:20px;border:2px solid var(--bdr);background:var(--card);color:var(--muted);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;">
+        🌟 Off Day
+      </button>
+    </div>
+    <div class="moved-notice no-print" id="moved-notice"></div>
+    <div class="offday-banner no-print" id="offday-banner">🌟 Off Day — normal tasks + off day template tasks</div>
+    <div class="print-date-bar"><span class="pd-title">📋 To Do List</span><span class="pd-date" id="print-date-label"></span></div>
+    <div class="section">
+      <table class="task-table"><thead><tr><th style="width:24px">#</th><th>කාර්යය</th><th>Priority</th><th>වෙලාව</th><th>Status</th><th>Notes</th><th class="no-print">Action</th></tr></thead><tbody id="cal-todo-body"></tbody></table>
+    </div>
+    <div class="section section-done" id="cal-done-section" style="display:none;">
+      <div class="section-header">✅ සම්පූර්ණ කළ කාර්යයන් (Completed)<span class="count-badge" id="cal-done-count">0</span></div>
+      <table class="task-table"><thead><tr><th style="width:24px">#</th><th>කාර්යය</th><th>Priority</th><th>වෙලාව</th><th>Status</th><th>Notes</th><th class="no-print">Action</th></tr></thead><tbody id="cal-done-body"></tbody></table>
+    </div>
+  </div>
+</div>
+
+<!-- All Tasks Tab -->
+<div id="tab-all" style="display:none;">
+  <div class="main">
+    <div class="all-tasks-toolbar no-print">
+      <select id="flt-priority" onchange="renderAllTab()"><option value="">සියලු Priority</option><option value="high">🔥 High</option><option value="medium">📌 Medium</option><option value="low">🧘 Low</option></select>
+      <select id="flt-status" onchange="renderAllTab()"><option value="">සියලු Status</option><option value="todo">⏳ To Do</option><option value="done">✅ Done</option></select>
+      <input type="text" id="flt-search" placeholder="🔍 සොයන්න..." oninput="renderAllTab()" style="flex:1;min-width:140px;"/>
+    </div>
+    <div class="add-task-card no-print">
+      <h3>➕ නව කාර්යයක් එකතු කරන්න</h3>
+      <div class="add-row">
+        <input class="ff f-task" type="text" id="at-task-name" placeholder="කාර්යය ලියන්න..."/>
+        <select class="ff f-sel" id="at-task-priority"><option value="high">🔥 High</option><option value="medium" selected>📌 Medium</option><option value="low">🧘 Low</option></select>
+        <input class="ff f-time" type="number" id="at-task-hour" min="1" max="12" placeholder="HH"/>
+        <input class="ff f-time" type="number" id="at-task-min" min="0" max="59" placeholder="MM"/>
+        <select class="ff f-ampm" id="at-task-ampm"><option value="AM">AM</option><option value="PM">PM</option></select>
+        <input class="ff f-dur" type="number" id="at-task-dur-h" min="0" max="23" placeholder="+ පැය"/>
+        <input class="ff f-dur" type="number" id="at-task-dur-m" min="0" max="59" placeholder="+ මිනි"/>
+      </div>
+      <div class="second-row">
+        <input type="date" class="ff" id="at-task-date"/>
+        <input class="ff f-notes" type="text" id="at-task-notes" placeholder="Notes..."/>
+        <div class="everyday-wrap"><input type="checkbox" class="toggle-cb" id="at-task-everyday"/><label for="at-task-everyday">හැම දවසටම</label></div>
+        <button class="btn-teal" onclick="addTaskFromAllTab()">+ එකතු කරන්න</button>
+      </div>
+    </div>
+    <div class="section">
+      <table class="task-table"><thead><tr><th style="width:24px">#</th><th>කාර්යය</th><th>Priority</th><th>දිනය</th><th>වෙලාව</th><th>Status</th><th>Notes</th><th class="no-print">Action</th></tr></thead><tbody id="all-tasks-body"></tbody></table>
+    </div>
+  </div>
+</div>
+
+<!-- Off Day Tab -->
+<div id="tab-offday" style="display:none;">
+  <div class="main">
+    <div style="background:var(--card);border-radius:12px;border:2px solid #f0963a;padding:13px 17px;margin-bottom:16px;box-shadow:var(--shad);">
+      <h3 style="font-size:13px;font-weight:700;color:#e67e22;margin-bottom:6px;">🌟 Off Day Task Template</h3>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:12px;">මෙහි add කළ tasks, Off Day ලෙස mark කළ ඕනෑම දිනකට ස්වයංක්‍රීයව add වේ. Calendar tab හි <strong style="color:#e67e22;">🌟 Off Day</strong> button click කිරීමෙන් දිනයක් off day ලෙස mark කළ හැකිය.</p>
+      <div class="add-row">
+        <input class="ff f-task" type="text" id="od-task-name" placeholder="Off day task ලියන්න..."/>
+        <select class="ff f-sel" id="od-task-priority"><option value="high">🔥 High</option><option value="medium" selected>📌 Medium</option><option value="low">🧘 Low</option></select>
+        <input class="ff f-time" type="number" id="od-task-hour" min="1" max="12" placeholder="HH"/>
+        <input class="ff f-time" type="number" id="od-task-min" min="0" max="59" placeholder="MM"/>
+        <select class="ff f-ampm" id="od-task-ampm"><option value="AM">AM</option><option value="PM">PM</option></select>
+        <input class="ff f-dur" type="number" id="od-task-dur-h" min="0" max="23" placeholder="+ පැය"/>
+        <input class="ff f-dur" type="number" id="od-task-dur-m" min="0" max="59" placeholder="+ මිනි"/>
+      </div>
+      <div class="second-row" style="margin-top:6px;">
+        <input class="ff f-notes" type="text" id="od-task-notes" placeholder="Notes..."/>
+        <button class="btn-teal" style="background:#e67e22;" onclick="addOffDayTask()">+ Off Day Task</button>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-header" style="background:#fef5ec;color:#e67e22;border-left:4px solid #e67e22;">
+        🌟 Off Day Tasks Template <span class="count-badge" id="offday-count">0</span>
+      </div>
+      <table class="task-table"><thead><tr><th style="width:24px">#</th><th>කාර්යය</th><th>Priority</th><th>වෙලාව</th><th>Notes</th><th class="no-print">Action</th></tr></thead><tbody id="offday-body"></tbody></table>
+    </div>
+    <div style="margin-top:16px;background:var(--card);border-radius:12px;border:1px solid var(--bdr);padding:13px 17px;">
+      <h3 style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px;">📅 Off Days List</h3>
+      <div id="offday-dates-list" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+      <p style="font-size:11px;color:var(--muted);margin-top:8px;">Calendar tab හි 🌟 Off Day button click කිරීමෙන් දිනය mark/unmark කළ හැකිය.</p>
+    </div>
+  </div>
+</div>
+<div id="alarm-popup" class="alarm-hidden" style="position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:9999;align-items:center;justify-content:center;">
+  <div id="alarm-inner" style="background:var(--mo-bg);border:2px solid var(--teal);border-radius:18px;padding:28px 28px 22px;max-width:340px;width:92%;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,.4);">
+    <div style="font-size:42px;margin-bottom:8px;">⏰</div>
+    <div style="font-size:13px;font-weight:700;color:var(--teal);margin-bottom:6px;" id="alarm-time-label"></div>
+    <div style="font-size:17px;font-weight:800;color:var(--txt);margin-bottom:8px;line-height:1.3;" id="alarm-task-name"></div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:6px;" id="alarm-priority-label"></div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:20px;font-style:italic;" id="alarm-notes-label"></div>
+    <button onclick="closeAlarmPopup()" style="background:var(--teal);color:#fff;border:none;border-radius:10px;padding:11px 32px;font-size:14px;font-weight:700;cursor:pointer;width:100%;">✓ හරි, දැනගත්තා</button>
+    <div style="font-size:11px;color:var(--muted);margin-top:10px;" id="alarm-pending-label"></div>
+  </div>
+</div>
+<style>
+@keyframes alarmPop{from{transform:scale(.85);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes alarmPulse{0%,100%{box-shadow:0 0 0 0 rgba(42,122,114,.5)}50%{box-shadow:0 0 0 16px rgba(42,122,114,0)}}
+.alarm-hidden{display:none!important;}
+.alarm-visible{display:flex!important;}
+#alarm-inner{animation:alarmPop .3s ease;}
+#alarm-inner.pulse{animation:alarmPulse 1s infinite;}
+</style>
+
+<script>
+// ══════════════════════════════════════════════════════
+// FIREBASE CONFIG — ඔබේ Firebase URL දෙන්න
+// Firebase Console → Realtime Database → URL copy කරන්න
+// e.g. https://YOUR-PROJECT-default-rtdb.firebaseio.com
+// ══════════════════════════════════════════════════════
+const FB_URL = 'https://my-todo-list-43435-default-rtdb.asia-southeast1.firebasedatabase.app';
+// ══════════════════════════════════════════════════════
+
+// ── FIREBASE REST API ─────────────────────────────────
+async function fbGet(path){
+  const r=await fetch(FB_URL+path+'.json');
+  if(!r.ok)throw new Error('fbGet '+r.status);
+  return r.json();
+}
+async function fbSet(path,data){
+  const r=await fetch(FB_URL+path+'.json',{method:'PUT',body:JSON.stringify(data),headers:{'Content-Type':'application/json'}});
+  if(!r.ok)throw new Error('fbSet '+r.status);
+  return r.json();
+}
+async function fbPatch(path,data){
+  const r=await fetch(FB_URL+path+'.json',{method:'PATCH',body:JSON.stringify(data),headers:{'Content-Type':'application/json'}});
+  if(!r.ok)throw new Error('fbPatch '+r.status);
+  return r.json();
+}
+async function fbDelete(path){
+  const r=await fetch(FB_URL+path+'.json',{method:'DELETE'});
+  if(!r.ok)throw new Error('fbDelete '+r.status);
+}
+
+// ── FIREBASE REALTIME LISTENER (SSE) ─────────────────
+// Firebase REST Streaming — instant push to all browsers
+let fbListeners={};
+function fbListen(path, onData){
+  if(fbListeners[path]){fbListeners[path].close();}
+  const es=new EventSource(FB_URL+path+'.json?limitToLast=1');
+  es.addEventListener('put',async()=>{ await onData(); });
+  es.addEventListener('patch',async()=>{ await onData(); });
+  es.onerror=()=>{ setSyncStatus('poll'); };
+  es.onopen=()=>{ setSyncStatus('live'); };
+  fbListeners[path]=es;
+  return es;
+}
+function fbStopListen(path){
+  if(fbListeners[path]){fbListeners[path].close();delete fbListeners[path];}
+}
+
+// ── DB OPERATIONS ─────────────────────────────────────
+// Firebase path: /tasks/2025-01-15/TASK_ID
+function safeKey(k){return(k||'').replace(/[.#$[\]/]/g,'_');}
+
+async function dbSave(task, dk){
+  try{
+    setSyncStatus('syncing');
+    const path='/tasks/'+safeKey(dk)+'/'+safeKey(task.id);
+    await fbSet(path, task);
+    setSyncStatus('live');
+  }catch(e){console.error('[dbSave]',e);setSyncStatus('poll');}
+}
+async function dbDelete(taskId, dk){
+  try{
+    setSyncStatus('syncing');
+    await fbDelete('/tasks/'+safeKey(dk)+'/'+safeKey(taskId));
+    setSyncStatus('live');
+  }catch(e){console.error('[dbDelete]',e);setSyncStatus('poll');}
+}
+async function dbLoadDate(dk){
+  try{
+    const data=await fbGet('/tasks/'+safeKey(dk));
+    return data ? Object.values(data) : [];
+  }catch(e){console.error('[dbLoadDate]',e);return [];}
+}
+async function dbLoadAll(){
+  try{
+    const data=await fbGet('/tasks');
+    if(!data)return {};
+    const result={};
+    Object.entries(data).forEach(([dk,tasks])=>{
+      result[dk]=Object.values(tasks);
+    });
+    return result;
+  }catch(e){console.error('[dbLoadAll]',e);return {};}
+}
+
+// ── STATE ─────────────────────────────────────────────
+const MONTHS_SI=['ජනවාරි','පෙබරවාරි','මාර්තු','අප්‍රේල්','මැයි','ජූනි','ජූලි','අගෝස්තු','සැප්තැම්බර්','ඔක්තෝබර්','නොවැම්බර්','දෙසැම්බර්'];
+const MONTHS_EN=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const DAYS_SI=['ඉරිදා','සඳුදා','අඟහරුවාදා','බදාදා','බ්‍රහස්පතින්දා','සිකුරාදා','සෙනසුරාදා'];
+let today=new Date();today.setHours(0,0,0,0);
+let viewMonth=today.getMonth(),viewYear=today.getFullYear();
+let selectedDate=dateKey(today);
+let cache={};   // { dateKey: [task,...] }
+let pendingDeleteId=null,pendingDeleteDate=null;
+let currentTab='calendar';
+let editingId=null;
+
+let theme=localStorage.getItem('todo_theme')||'light';
+applyTheme(theme);
+function applyTheme(t){theme=t;document.documentElement.setAttribute('data-theme',t);const b=document.getElementById('theme-btn');if(b)b.textContent=t==='dark'?'☀️':'🌙';localStorage.setItem('todo_theme',t);}
+function toggleTheme(){applyTheme(theme==='light'?'dark':'light');}
+
+async function manualRefresh(){
+  const btn=document.getElementById('refresh-btn');
+  if(btn){btn.style.opacity='0.4';btn.style.pointerEvents='none';}
+  try{
+    const[tasks,evTasks,overrides]=await Promise.all([
+      dbLoadDate(selectedDate),
+      dbLoadDate('everyday'),
+      dbLoadDate('done_overrides/'+safeKey(selectedDate))
+    ]);
+    setCT(selectedDate,tasks);
+    setCT('everyday',evTasks);
+    cache['done_overrides/'+selectedDate]=Array.isArray(overrides)
+      ?Object.fromEntries(overrides.map(o=>[o.id,o])):(overrides||{});
+    await loadOffDayData();
+    renderCalTab();renderStrip();
+    if(currentTab==='all'){await loadAndRenderAll();}
+    if(currentTab==='offday'){renderOffDayTab();}
+    showToast('✓ Refreshed');
+  }catch(e){showToast('Refresh failed');}
+  if(btn){btn.style.opacity='1';btn.style.pointerEvents='';}
+}
+
+function setSyncStatus(s){
+  const d=document.getElementById('sync-dot');if(!d)return;
+  const bg={live:'#4ecb78',syncing:'#f0963a',poll:'#f0963a',err:'#f17066'};
+  const tip={live:'🟢 Live sync',syncing:'Syncing…',poll:'🟠 Reconnecting…',err:'🔴 Error'};
+  d.style.background=bg[s]||bg.poll;
+  d.title=tip[s]||tip.poll;
+  if(s==='syncing')d.style.animation='pulse .7s infinite alternate';
+  else d.style.animation='';
+}
+
+function dateKey(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function getCT(dk){if(!cache[dk])cache[dk]=[];return cache[dk];}
+function setCT(dk,arr){cache[dk]=arr;}
+
+// ── TABS ──────────────────────────────────────────────
+function switchTab(t){
+  currentTab=t;
+  document.getElementById('tab-calendar').style.display=t==='calendar'?'':'none';
+  document.getElementById('tab-all').style.display=t==='all'?'':'none';
+  document.getElementById('tab-offday').style.display=t==='offday'?'':'none';
+  ['calendar','all','offday'].forEach(id=>{
+    document.getElementById('tbtn-'+id).className='tab-btn'+(t===id?' active':'');
+  });
+  if(t==='all') loadAndRenderAll();
+  if(t==='offday') renderOffDayTab();
+}
+
+// ── MONTH STRIP ───────────────────────────────────────
+function prevMonth(){viewMonth--;if(viewMonth<0){viewMonth=11;viewYear--;}renderStrip();}
+function nextMonth(){viewMonth++;if(viewMonth>11){viewMonth=0;viewYear++;}renderStrip();}
+function renderStrip(){
+  document.getElementById('month-label').textContent=MONTHS_EN[viewMonth]+' '+viewYear;
+  const strip=document.getElementById('day-strip'),days=new Date(viewYear,viewMonth+1,0).getDate();
+  strip.innerHTML='';
+  for(let d=1;d<=days;d++){
+    const dt=new Date(viewYear,viewMonth,d),key=dateKey(dt);
+    const btn=document.createElement('button');btn.className='day-btn';
+    if(key===dateKey(today))btn.classList.add('today');
+    if(key===selectedDate)btn.classList.add('selected');
+    if(offDayDates&&offDayDates.has(key))btn.classList.add('offday');
+    if(cache[key]&&cache[key].length)btn.classList.add('has-tasks');
+    btn.textContent=d;btn.onclick=()=>selectDate(key);strip.appendChild(btn);
+  }
+}
+async function selectDate(key){
+  selectedDate=key;renderStrip();
+  fbStopListen('/tasks/'+safeKey(selectedDate));
+  const tasks=await dbLoadDate(key);
+  setCT(key,tasks);
+  startListening(key);
+  renderCalTab();
+}
+
+// ── TIME UTILS ────────────────────────────────────────
+function t2m(h,m,a){let hh=parseInt(h)||0,mm=parseInt(m)||0;if(!hh&&!mm&&!h)return 9999;if(a==='AM'){if(hh===12)hh=0;}else if(hh!==12)hh+=12;return hh*60+mm;}
+function addDur(h,m,a,dh,dm){h=parseInt(h)||0;m=parseInt(m)||0;dh=parseInt(dh)||0;dm=parseInt(dm)||0;let h24=h;if(a==='AM'){if(h===12)h24=0;}else if(h!==12)h24=h+12;let tot=(h24*60+m+dh*60+dm)%1440;let eh=Math.floor(tot/60),em=tot%60,ea='AM';if(eh>=12){ea='PM';if(eh>12)eh-=12;}if(eh===0)eh=12;return{h:eh,m:em,a:ea};}
+function fmt12(h,m,a){return String(parseInt(h)||0).padStart(2,'0')+':'+String(parseInt(m)||0).padStart(2,'0')+' '+a;}
+function tRange(t){const h=parseInt(t.timeH)||0,m=parseInt(t.timeM)||0;if(!h&&!m&&!t.timeH)return '';const s=fmt12(h,m,t.ampm||'AM');const dh=parseInt(t.durH)||0,dm=parseInt(t.durM)||0;if(!dh&&!dm)return s;const e=addDur(h,m,t.ampm||'AM',dh,dm);return s+' – '+fmt12(e.h,e.m,e.a);}
+function pL(p){return p==='high'?'🔥 High Priority':p==='medium'?'📌 Medium Priority':'🧘 Low Priority';}
+function pC(p){return p==='high'?'pri-high':p==='medium'?'pri-med':'pri-low';}
+function escH(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function escJ(s){return(s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");}
+function fmtDate(dk){if(!dk||dk==='everyday')return dk;const[y,mo,d]=dk.split('-');const dt=new Date(parseInt(y),parseInt(mo)-1,parseInt(d));return MONTHS_SI[dt.getMonth()]+' '+d;}
+
+// ── FIREBASE REALTIME LISTENER FOR CURRENT DATE ───────
+function startListening(dk){
+  fbListen('/tasks/'+safeKey(dk), async()=>{
+    const tasks=await dbLoadDate(dk);
+    setCT(dk,tasks);
+    if(currentTab==='calendar'&&dk===selectedDate) renderCalTab();
+    renderStrip();
+  });
+}
+
+// ── RENDER CALENDAR TAB ───────────────────────────────
+function renderCalTab(){
+  const parts=selectedDate.split('-');
+  const selD=new Date(parseInt(parts[0]),parseInt(parts[1])-1,parseInt(parts[2]));
+  document.getElementById('date-title').textContent=MONTHS_SI[selD.getMonth()]+' '+selD.getDate()+', '+selD.getFullYear();
+  document.getElementById('date-sub').textContent=DAYS_SI[selD.getDay()];
+  document.getElementById('print-date-label').textContent=DAYS_SI[selD.getDay()]+', '+MONTHS_SI[selD.getMonth()]+' '+selD.getDate()+' '+selD.getFullYear();
+
+  // Merge: everyday + (offday if marked) + date-specific tasks
+  const dateTasks=getCT(selectedDate);
+  const overrides=cache['done_overrides/'+selectedDate]||{};
+
+  const everyTasks=getCT('everyday').map(t=>{
+    const ov=overrides[t.id];
+    if(ov) return{...t,_fromEveryday:true,status:ov.status,doneNote:ov.doneNote||'',missReason:ov.missReason||''};
+    return{...t,_fromEveryday:true,status:'todo'};
+  });
+
+  // Off Day tasks — only if this date is marked as off day
+  const isOffDay=offDayDates.has(selectedDate);
+  const offTasks=isOffDay?getCT('offday').map(t=>{
+    const ov=overrides[t.id];
+    if(ov) return{...t,_fromOffDay:true,status:ov.status,doneNote:ov.doneNote||'',missReason:ov.missReason||''};
+    return{...t,_fromOffDay:true,status:'todo'};
+  }):[];
+
+  const merged=[...everyTasks,...offTasks,...dateTasks];
+
+  // Update off day toggle button
+  updateOffDayToggleBtn();
+
+  const srt=a=>a.slice().sort((x,y)=>t2m(x.timeH,x.timeM,x.ampm)-t2m(y.timeH,y.timeM,y.ampm));
+  const todo=srt(merged.filter(t=>t.status==='todo'));
+  const done=merged.filter(t=>t.status==='done'||t.status==='miss');
+
+  renderTodoTable('cal-todo-body',todo,selectedDate);
+  renderDoneTable('cal-done-body',done,selectedDate);
+  document.getElementById('cal-done-count').textContent=done.length;
+  document.getElementById('cal-done-section').style.display=done.length?'':'none';
+  document.getElementById('cal-badge').textContent=todo.length+done.length;
+  updateAllBadge();
+}
+
+// ── RENDER ALL TAB ────────────────────────────────────
+async function loadAndRenderAll(){
+  const allData=await dbLoadAll();
+  Object.entries(allData).forEach(([dk,tasks])=>setCT(dk,tasks));
+  renderAllTab();
+}
+
+function renderAllTab(){
+  const fltP=document.getElementById('flt-priority').value;
+  const fltS=document.getElementById('flt-status').value;
+  const fltQ=(document.getElementById('flt-search').value||'').toLowerCase();
+
+  // Separate everyday vs date-specific
+  let everydayRows=[], dateRows=[];
+  Object.entries(cache).forEach(([dk,v])=>{
+    if(dk.startsWith('done_overrides'))return;
+    if(!Array.isArray(v))return;
+    v.forEach(t=>{
+      if(dk==='everyday') everydayRows.push({...t,_dk:dk});
+      else dateRows.push({...t,_dk:dk});
+    });
+  });
+
+  // Apply filters to both
+  const applyFilter=rows=>{
+    let r=rows;
+    if(fltP)r=r.filter(t=>t.priority===fltP);
+    if(fltS)r=r.filter(t=>(fltS==='done'?t.status==='done':t.status!=='done'));
+    if(fltQ)r=r.filter(t=>(t.name||'').toLowerCase().includes(fltQ)||(t.notes||'').toLowerCase().includes(fltQ));
+    return r;
+  };
+  everydayRows=applyFilter(everydayRows);
+  dateRows=applyFilter(dateRows).sort((a,b)=>{
+    const r=(a._dk||'').localeCompare(b._dk||'');
+    if(r!==0)return r;
+    return t2m(a.timeH,a.timeM,a.ampm)-t2m(b.timeH,b.timeM,b.ampm);
+  });
+
+  // Combine: everyday first, then date-specific (hidden by default)
+  const allRows=[...everydayRows,...dateRows];
+
+  const tbody=document.getElementById('all-tasks-body');
+  if(!allRows.length){tbody.innerHTML='<tr><td colspan="8" class="empty-msg">කාර්ය නොමැත</td></tr>';document.getElementById('all-badge').textContent=0;return;}
+
+  // Count non-everyday for toggle label
+  const dateCount=dateRows.length;
+  let num=0;
+
+  tbody.innerHTML=allRows.map((t,i)=>{
+    const tr=tRange(t);
+    const dkLabel=t._dk==='everyday'?'🔁 හැම දවසම':fmtDate(t._dk);
+    const isDate=t._dk!=='everyday';
+    num++;
+
+    const rowContent=editingId===t.id
+      ?`<tr class="editing" ${isDate?'class="date-task-row" style="display:none"':''}>
+          <td class="num-cell">${num}.</td>
+          <td><input class="edit-input" id="ei-name" value="${escH(t.name)}" style="min-width:120px"/></td>
+          <td><select class="edit-select" id="ei-pri"><option value="high"${t.priority==='high'?' selected':''}>🔥 High</option><option value="medium"${t.priority==='medium'?' selected':''}>📌 Med</option><option value="low"${t.priority==='low'?' selected':''}>🧘 Low</option></select></td>
+          <td style="font-size:11px;color:var(--muted)">${escH(dkLabel)}</td>
+          <td><input class="edit-input" id="ei-time" value="${escH(tr)}" placeholder="09:00 AM – 10:00 AM" style="width:140px"/></td>
+          <td><span class="status-badge ${t.status==='done'?'badge-done':'badge-todo'}">${t.status==='done'?'✅ Done':'⏳ To do'}</span></td>
+          <td><input class="edit-input" id="ei-notes" value="${escH(t.notes||'')}" style="min-width:90px"/></td>
+          <td><div class="action-btns"><button class="btn-save" onclick="saveEdit('${escJ(t.id)}','${escJ(t._dk)}')">💾</button><button class="btn-cancel-edit" onclick="cancelEdit()">✕</button></div></td>
+        </tr>`
+      :`<tr ${isDate?'class="date-task-row" style="display:none"':''}>
+          <td class="num-cell">${num}.</td>
+          <td class="t-name"${t.status==='done'?' style="text-decoration:line-through;color:var(--muted)"':''}>${escH(t.name)}</td>
+          <td><span class="pri-badge ${pC(t.priority)}">${pL(t.priority)}</span></td>
+          <td><span class="date-tag">${escH(dkLabel)}</span></td>
+          <td>${tr?`<span class="time-range">${escH(tr)}</span>`:'<span style="color:var(--bdr)">—</span>'}</td>
+          <td><span class="status-badge ${t.status==='done'?'badge-done':'badge-todo'}">${t.status==='done'?'✅ Done':'⏳ To do'}</span></td>
+          <td style="color:var(--muted);font-size:11px;">${escH(t.notes||'')}</td>
+          <td class="no-print"><div class="action-btns">
+            ${t.status!=='done'
+              ?`<button class="action-btn btn-complete" onclick="completeTask('${escJ(t.id)}','${escJ(t._dk)}')">✓</button>`
+              :`<button class="action-btn btn-undo" onclick="undoTask('${escJ(t.id)}','${escJ(t._dk)}')">↩</button>`}
+            <button class="action-btn btn-edit" onclick="startEdit('${escJ(t.id)}')">✏</button>
+            <button class="action-btn btn-delete" onclick="askDelete('${escJ(t.id)}','${escJ(escH(t.name))}','${escJ(t._dk)}')">✕</button>
+          </div></td>
+        </tr>`;
+
+    // Insert toggle row before first date-specific task
+    const isFirstDate=isDate && (i===0||allRows[i-1]._dk==='everyday');
+    const toggleRow=isFirstDate&&dateCount>0
+      ?`<tr id="date-tasks-toggle-row" style="cursor:pointer;background:var(--teal-bg);" onclick="toggleDateTasks()">
+          <td colspan="8" style="padding:7px 12px;font-size:12px;font-weight:600;color:var(--teal);">
+            <span id="date-tasks-toggle-icon">▶</span> නිශ්චිත දිනවල කාර්ය (${dateCount}) — click කර පෙන්වන්න
+          </td>
+        </tr>`
+      :'';
+    return toggleRow+rowContent;
+  }).join('');
+
+  document.getElementById('all-badge').textContent=allRows.length;
+}
+
+function updateAllBadge(){
+  let n=0;
+  Object.entries(cache).forEach(([k,v])=>{
+    if(k.startsWith('done_overrides'))return;
+    if(Array.isArray(v))n+=v.length;
+  });
+  document.getElementById('all-badge').textContent=n;
+}
+
+let dateTasksVisible=false;
+function toggleDateTasks(){
+  dateTasksVisible=!dateTasksVisible;
+  document.querySelectorAll('.date-task-row').forEach(r=>{
+    r.style.display=dateTasksVisible?'':'none';
+  });
+  const icon=document.getElementById('date-tasks-toggle-icon');
+  const row=document.getElementById('date-tasks-toggle-row');
+  if(icon){icon.textContent=dateTasksVisible?'▼':'▶';}
+  if(row){
+    const td=row.querySelector('td');
+    if(td){
+      const cnt=document.querySelectorAll('.date-task-row').length;
+      td.innerHTML=`<span id="date-tasks-toggle-icon">${dateTasksVisible?'▼':'▶'}</span> නිශ්චිත දිනවල කාර්ය (${cnt}) — ${dateTasksVisible?'සඟවන්න':'click කර පෙන්වන්න'}`;
+    }
+  }
+}
+
+// ── TABLE RENDERERS ───────────────────────────────────
+function renderTodoTable(tid,tasks,dk){
+  const tb=document.getElementById(tid);
+  if(!tasks.length){tb.innerHTML='<tr><td colspan="7" class="empty-msg">කාර්ය නොමැත</td></tr>';return;}
+  tb.innerHTML=tasks.map((t,i)=>{
+    const tr2=tRange(t);
+    const mv=t.movedFrom?'<span class="moved-tag">⏩ ගෙනා ලදී</span>':'';
+    const isTemplate=t._fromEveryday||t._fromOffDay;
+    const realDk=t._fromEveryday?'everyday':t._fromOffDay?'offday':dk;
+    const offBadge=t._fromOffDay?'<span style="font-size:9px;background:#fef5ec;color:#b35c00;border-radius:3px;padding:1px 5px;margin-left:4px;border:1px solid #f8c68c;">🌟</span>':'';
+    const actionBtns=isTemplate
+      ?`<button class="action-btn btn-complete" title="Done ✓" onclick="askDone('${escJ(t.id)}','${escJ(realDk)}','${escJ(escH(t.name))}')">✓</button>
+         <button class="action-btn btn-miss" title="කරගන්න බැරි වුනු හේතුව" onclick="askMiss('${escJ(t.id)}','${escJ(escH(t.name))}')">✗</button>`
+      :`<button class="action-btn btn-complete" title="Done ✓" onclick="askDone('${escJ(t.id)}','${escJ(realDk)}','${escJ(escH(t.name))}')">✓</button>
+        <button class="action-btn btn-move-next" title="ඊළඟ දවසට" onclick="askMoveNext('${escJ(t.id)}','${escJ(realDk)}','${escJ(escH(t.name))}')">→</button>
+        <button class="action-btn btn-delete" title="Delete" onclick="askDelete('${escJ(t.id)}','${escJ(escH(t.name))}','${escJ(realDk)}')">✕</button>`;
+    return`<tr>
+      <td class="num-cell">${i+1}.</td>
+      <td class="t-name-cell">${escH(t.name)}${offBadge}${mv}</td>
+      <td><span class="pri-badge ${pC(t.priority)}">${pL(t.priority)}</span></td>
+      <td>${tr2?`<span class="time-range">${escH(tr2)}</span>`:'<span style="color:var(--bdr)">—</span>'}</td>
+      <td><span class="status-badge badge-todo">⏳ To do</span></td>
+      <td style="color:var(--muted);font-size:11px;">${escH(t.notes||'')}</td>
+      <td class="action-cell no-print"><div class="action-btns">${actionBtns}</div></td>
+    </tr>`;
+  }).join('');
+}
+
+function renderDoneTable(tid,tasks,dk){
+  const tb=document.getElementById(tid);
+  if(!tasks.length){tb.innerHTML='';return;}
+  tb.innerHTML=tasks.map((t,i)=>{
+    const tr2=tRange(t);
+    const realDk=t._fromEveryday?'everyday':t._fromOffDay?'offday':dk;
+    const isMiss=t.status==='miss';
+    const statusBadge=isMiss
+      ?`<span class="status-badge badge-miss">✗ Miss</span>`
+      :`<span class="status-badge badge-done">✅ Done</span>`;
+    // Show ONLY the action-time note (doneNote or missReason), NOT original task notes
+    const actionNote=isMiss?(t.missReason||''):(t.doneNote||'');
+    const noteDisplay=actionNote?`💬 ${actionNote}`:'';
+    return`<tr class="done-row">
+      <td class="num-cell">${i+1}.</td>
+      <td class="t-name-cell">${escH(t.name)}</td>
+      <td><span class="pri-badge ${pC(t.priority)}">${pL(t.priority)}</span></td>
+      <td>${tr2?`<span class="time-range">${escH(tr2)}</span>`:'—'}</td>
+      <td>${statusBadge}</td>
+      <td style="color:var(--muted);font-size:11px;">${escH(noteDisplay)}</td>
+      <td class="action-cell no-print"><div class="action-btns">
+        <button class="action-btn btn-undo" title="Undo" onclick="undoTask('${escJ(t.id)}','${escJ(realDk)}')">↩</button>
+        ${!t._fromEveryday?`<button class="action-btn btn-delete" title="Delete" onclick="askDelete('${escJ(t.id)}','${escJ(escH(t.name))}','${escJ(realDk)}')">✕</button>`:''}
+      </div></td>
+    </tr>`;
+  }).join('');
+}
+
+// ── TASK ACTIONS ──────────────────────────────────────
+
+async function addTaskFromAllTab(){
+  const name=document.getElementById('at-task-name').value.trim();
+  if(!name){alert('කාර්යය ලියන්න!');return;}
+  const isEv=document.getElementById('at-task-everyday').checked;
+  const dk=isEv?'everyday':(document.getElementById('at-task-date').value||selectedDate);
+  const task={id:String(Date.now()),name,
+    priority:document.getElementById('at-task-priority').value,
+    timeH:document.getElementById('at-task-hour').value||'',
+    timeM:document.getElementById('at-task-min').value||'',
+    ampm:document.getElementById('at-task-ampm').value,
+    durH:document.getElementById('at-task-dur-h').value||'0',
+    durM:document.getElementById('at-task-dur-m').value||'0',
+    notes:document.getElementById('at-task-notes').value.trim(),
+    status:'todo',created:dk,isEveryday:isEv};
+  await dbSave(task,dk);
+  const arr=getCT(dk);arr.push(task);setCT(dk,arr);
+  ['at-task-name','at-task-notes','at-task-dur-h','at-task-dur-m','at-task-hour','at-task-min'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('at-task-everyday').checked=false;
+  document.getElementById('at-task-date').value='';
+  renderAllTab();renderStrip();
+  if(dk===selectedDate||dk==='everyday')renderCalTab();
+  if(isEv)showToast('හැම දවසටම task එකතු කළා 🔁');
+}
+
+// ── MISS (everyday tasks — හේතුව record, move නෑ) ────
+let pendingMissId=null;
+function askMiss(id,name){
+  pendingMissId=id;
+  document.getElementById('miss-task-name').textContent=name;
+  document.getElementById('miss-reason-input').value='';
+  document.getElementById('miss-modal').classList.add('active');
+  setTimeout(()=>document.getElementById('miss-reason-input').focus(),80);
+}
+function closeMissModal(){
+  pendingMissId=null;
+  document.getElementById('miss-modal').classList.remove('active');
+}
+async function confirmMiss(){
+  if(!pendingMissId)return;
+  const reason=document.getElementById('miss-reason-input').value.trim();
+  const override={id:pendingMissId,date:selectedDate,status:'miss',missReason:reason||''};
+  await dbSave(override,'done_overrides/'+safeKey(selectedDate));
+  if(!cache['done_overrides/'+selectedDate])cache['done_overrides/'+selectedDate]={};
+  cache['done_overrides/'+selectedDate][pendingMissId]=override;
+  closeMissModal();
+  renderCalTab();
+}
+document.getElementById('miss-modal').addEventListener('click',function(e){if(e.target===this)closeMissModal();});
+document.getElementById('miss-reason-input').addEventListener('keydown',e=>{if(e.ctrlKey&&e.key==='Enter')confirmMiss();});
+
+// ── MOVE NEXT WITH REASON ─────────────────────────────
+let pendingDoneId=null,pendingDoneDk=null,pendingDoneIsEv=false;
+
+function askMoveNext(id,dk,name){
+  pendingDoneId=id;
+  pendingDoneIsEv=dk==='everyday';
+  pendingDoneDk=dk;
+  document.getElementById('skip-task-name').textContent=name;
+  document.getElementById('skip-reason-input').value='';
+  document.getElementById('skip-modal').classList.add('active');
+  setTimeout(()=>document.getElementById('skip-reason-input').focus(),80);
+}
+function closeSkipModal(){
+  pendingDoneId=null;
+  document.getElementById('skip-modal').classList.remove('active');
+}
+async function confirmSkip(){
+  if(!pendingDoneId)return;
+  const reason=document.getElementById('skip-reason-input').value.trim();
+  // Move to next day with reason stored in notes
+  const tasks=getCT(pendingDoneDk);
+  const idx=tasks.findIndex(x=>x.id===pendingDoneId);
+  if(idx!==-1){
+    const t=tasks[idx];
+    const parts=pendingDoneDk.split('-');
+    const nxt=new Date(parseInt(parts[0]),parseInt(parts[1])-1,parseInt(parts[2]));
+    nxt.setDate(nxt.getDate()+1);
+    const nk=dateKey(nxt);
+    const copy={...t,id:String(Date.now()+Math.random()),status:'todo',movedFrom:t.id};
+    delete copy.movedTo;
+    if(reason) copy.notes=reason;  // reason → Notes field of copied task
+    await dbSave(copy,nk);
+    const nArr=getCT(nk);nArr.push(copy);setCT(nk,nArr);
+    t.movedTo=nk;
+    await dbSave(t,pendingDoneDk);
+  }
+  closeSkipModal();
+  renderCalTab();renderStrip();
+  showToast('ඊළඟ දවසට ගෙන යන ලදී ✓');
+}
+document.getElementById('skip-modal').addEventListener('click',function(e){if(e.target===this)closeSkipModal();});
+document.getElementById('skip-reason-input').addEventListener('keydown',e=>{if(e.ctrlKey&&e.key==='Enter')confirmSkip();});
+
+// ── DONE WITH NOTE ────────────────────────────────────
+let pendingDoneNoteId=null, pendingDoneNoteDk=null;
+
+function askDone(id,dk,name){
+  pendingDoneNoteId=id; pendingDoneNoteDk=dk;
+  document.getElementById('done-note-task-name').textContent=name;
+  document.getElementById('done-note-input').value='';
+  document.getElementById('done-note-modal').classList.add('active');
+  setTimeout(()=>document.getElementById('done-note-input').focus(),80);
+}
+function closeDoneNoteModal(){
+  pendingDoneNoteId=null;
+  document.getElementById('done-note-modal').classList.remove('active');
+}
+async function confirmDoneNote(){
+  if(!pendingDoneNoteId)return;
+  const note=document.getElementById('done-note-input').value.trim();
+  await completeTask(pendingDoneNoteId, pendingDoneNoteDk, note);
+  closeDoneNoteModal();
+}
+document.getElementById('done-note-modal').addEventListener('click',function(e){if(e.target===this)closeDoneNoteModal();});
+document.getElementById('done-note-input').addEventListener('keydown',e=>{if(e.ctrlKey&&e.key==='Enter')confirmDoneNote();});
+
+async function completeTask(id,dk,doneNote=''){
+  const isTemplate=(dk==='everyday'||dk==='offday');
+  if(isTemplate){
+    const override={id,date:selectedDate,status:'done',doneNote};
+    await dbSave(override,'done_overrides/'+safeKey(selectedDate));
+    if(!cache['done_overrides/'+selectedDate])cache['done_overrides/'+selectedDate]={};
+    cache['done_overrides/'+selectedDate][id]=override;
+  } else {
+    const tasks=getCT(dk);const t=tasks.find(x=>x.id===id);
+    if(t){t.status='done';t.doneNote=doneNote;await dbSave(t,dk);}
+  }
+  renderCalTab();if(currentTab==='all')renderAllTab();
+}
+
+async function undoTask(id,dk){
+  const isTemplate=(dk==='everyday'||dk==='offday');
+  if(isTemplate){
+    await dbDelete(id,'done_overrides/'+safeKey(selectedDate));
+    if(cache['done_overrides/'+selectedDate])
+      delete cache['done_overrides/'+selectedDate][id];
+  } else {
+    const tasks=getCT(dk);const t=tasks.find(x=>x.id===id);
+    if(t){t.status='todo';delete t.doneReason;delete t.missReason;delete t.doneNote;await dbSave(t,dk);}
+  }
+  showToast('නැවත "To Do" ලැයිස්තුවට ගෙනා ✓');
+  renderCalTab();if(currentTab==='all')renderAllTab();
+}
+// ── EDIT ─────────────────────────────────────────────
+function startEdit(id){editingId=id;renderAllTab();}
+function cancelEdit(){editingId=null;renderAllTab();}
+async function saveEdit(id,dk){
+  const name=document.getElementById('ei-name').value.trim();if(!name){alert('කාර්යය ලියන්න!');return;}
+  const pri=document.getElementById('ei-pri').value;
+  const notes=document.getElementById('ei-notes').value.trim();
+  const timeStr=document.getElementById('ei-time').value.trim();
+  let timeH='',timeM='',ampm='AM',durH='0',durM='0';
+  const tm=timeStr.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+  if(tm){timeH=parseInt(tm[1]);timeM=parseInt(tm[2]);ampm=tm[3].toUpperCase();}
+  const tm2=timeStr.match(/–\s*(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+  if(tm&&tm2){
+    let sh=parseInt(tm[1]),sm=parseInt(tm[2]),sa=tm[3].toUpperCase();
+    let eh=parseInt(tm2[1]),em=parseInt(tm2[2]),ea=tm2[3].toUpperCase();
+    if(sa==='AM'&&sh===12)sh=0;else if(sa==='PM'&&sh!==12)sh+=12;
+    if(ea==='AM'&&eh===12)eh=0;else if(ea==='PM'&&eh!==12)eh+=12;
+    const diff=eh*60+em-(sh*60+sm);
+    if(diff>0){durH=Math.floor(diff/60);durM=diff%60;}
+  }
+  const tasks=getCT(dk);const t=tasks.find(x=>x.id===id);
+  if(t){Object.assign(t,{name,priority:pri,notes,timeH:String(timeH),timeM:String(timeM),ampm,durH:String(durH),durM:String(durM)});await dbSave(t,dk);}
+  editingId=null;renderAllTab();
+  if(currentTab==='calendar'&&dk===selectedDate)renderCalTab();
+  showToast('කාර්යය යාවත්කාලීන කළා ✓');
+}
+
+// ── DELETE ────────────────────────────────────────────
+function askDelete(id,name,dk){
+  pendingDeleteId=id;pendingDeleteDate=dk;
+  document.getElementById('modal-task-name').textContent=name;
+  document.getElementById('delete-modal').classList.add('active');
+}
+function closeModal(){pendingDeleteId=null;document.getElementById('delete-modal').classList.remove('active');}
+async function confirmDelete(){
+  if(!pendingDeleteId)return;
+  const dk=pendingDeleteDate||selectedDate;
+  const tasks=getCT(dk);setCT(dk,tasks.filter(x=>x.id!==pendingDeleteId));
+  await dbDelete(pendingDeleteId,dk);
+  closeModal();renderCalTab();if(currentTab==='all')renderAllTab();renderStrip();
+}
+document.getElementById('delete-modal').addEventListener('click',function(e){if(e.target===this)closeModal();});
+
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.style.opacity='1';clearTimeout(t._t);t._t=setTimeout(()=>{t.style.opacity='0';},2500);}
+
+document.getElementById('at-task-name').addEventListener('keydown',e=>{if(e.key==='Enter')addTaskFromAllTab();});
+
+// ── OFF DAY SYSTEM ────────────────────────────────────
+// offDayTasks: template tasks shown on every off day (stored in Firebase /tasks/offday)
+// offDayDates: set of date strings marked as off day (stored in Firebase /meta/offdays)
+
+let offDayDates=new Set(); // e.g. {'2026-03-24','2026-03-26'}
+
+async function loadOffDayData(){
+  try{
+    const [odTasks, odDates]=await Promise.all([
+      dbLoadDate('offday'),
+      fbGet('/meta/offdays')
+    ]);
+    setCT('offday', odTasks||[]);
+    offDayDates=new Set(odDates?Object.keys(odDates).map(k=>k.replace(/_/g,'-')):[]);
+  }catch(e){console.warn('[offday load]',e);}
+}
+
+async function toggleOffDay(){
+  const isOff=offDayDates.has(selectedDate);
+  if(isOff){
+    offDayDates.delete(selectedDate);
+    await fbDelete('/meta/offdays/'+safeKey(selectedDate));
+  } else {
+    offDayDates.add(selectedDate);
+    await fbSet('/meta/offdays/'+safeKey(selectedDate), true);
+  }
+  updateOffDayToggleBtn();
+  renderCalTab();
+  renderStrip();
+  if(currentTab==='offday')renderOffDayTab();
+}
+
+function updateOffDayToggleBtn(){
+  const btn=document.getElementById('offday-toggle-btn');
+  const banner=document.getElementById('offday-banner');
+  if(!btn)return;
+  const isOff=offDayDates.has(selectedDate);
+  if(isOff){
+    btn.style.background='#f0963a';
+    btn.style.color='#fff';
+    btn.style.borderColor='#f0963a';
+    btn.textContent='🌟 Off Day ✓';
+    if(banner)banner.style.display='block';
+  } else {
+    btn.style.background='var(--card)';
+    btn.style.color='var(--muted)';
+    btn.style.borderColor='var(--bdr)';
+    btn.textContent='🌟 Off Day';
+    if(banner)banner.style.display='none';
+  }
+}
+
+async function addOffDayTask(){
+  const name=document.getElementById('od-task-name').value.trim();
+  if(!name){alert('Task ලියන්න!');return;}
+  const task={id:String(Date.now()),name,
+    priority:document.getElementById('od-task-priority').value,
+    timeH:document.getElementById('od-task-hour').value||'',
+    timeM:document.getElementById('od-task-min').value||'',
+    ampm:document.getElementById('od-task-ampm').value,
+    durH:document.getElementById('od-task-dur-h').value||'0',
+    durM:document.getElementById('od-task-dur-m').value||'0',
+    notes:document.getElementById('od-task-notes').value.trim(),
+    status:'todo',isOffDay:true};
+  await dbSave(task,'offday');
+  const arr=getCT('offday');arr.push(task);setCT('offday',arr);
+  ['od-task-name','od-task-notes','od-task-dur-h','od-task-dur-m','od-task-hour','od-task-min'].forEach(id=>document.getElementById(id).value='');
+  renderOffDayTab();
+  showToast('Off Day task එකතු කළා 🌟');
+}
+
+async function deleteOffDayTask(id){
+  const arr=getCT('offday').filter(x=>x.id!==id);
+  setCT('offday',arr);
+  await dbDelete(id,'offday');
+  renderOffDayTab();
+  renderCalTab();
+}
+
+function renderOffDayTab(){
+  const tasks=getCT('offday');
+  document.getElementById('offday-count').textContent=tasks.length;
+  document.getElementById('offday-badge').textContent=tasks.length;
+  const tbody=document.getElementById('offday-body');
+  if(!tasks.length){
+    tbody.innerHTML='<tr><td colspan="6" class="empty-msg">Off day tasks නොමැත — ඉහතින් add කරන්න</td></tr>';
+  } else {
+    const srt=tasks.slice().sort((a,b)=>t2m(a.timeH,a.timeM,a.ampm)-t2m(b.timeH,b.timeM,b.ampm));
+    tbody.innerHTML=srt.map((t,i)=>{
+      const tr2=tRange(t);
+      return`<tr>
+        <td class="num-cell">${i+1}.</td>
+        <td class="t-name-cell">${escH(t.name)}</td>
+        <td><span class="pri-badge ${pC(t.priority)}">${pL(t.priority)}</span></td>
+        <td>${tr2?`<span class="time-range">${escH(tr2)}</span>`:'—'}</td>
+        <td style="color:var(--muted);font-size:11px;">${escH(t.notes||'')}</td>
+        <td class="no-print"><button class="action-btn btn-delete" onclick="deleteOffDayTask('${escJ(t.id)}')">✕</button></td>
+      </tr>`;
+    }).join('');
+  }
+  // Render off day dates list
+  const list=document.getElementById('offday-dates-list');
+  if(offDayDates.size===0){
+    list.innerHTML='<span style="font-size:12px;color:var(--muted);">Off days නොමැත</span>';
+  } else {
+    const sorted=[...offDayDates].sort();
+    list.innerHTML=sorted.map(dk=>{
+      const [y,mo,d]=dk.split('-');
+      const dt=new Date(parseInt(y),parseInt(mo)-1,parseInt(d));
+      const label=MONTHS_SI[dt.getMonth()]+' '+d+' ('+DAYS_SI[dt.getDay()]+')';
+      return`<span style="background:#fef5ec;border:1px solid #f8c68c;border-radius:20px;padding:3px 10px;font-size:12px;color:#b35c00;display:inline-flex;align-items:center;gap:5px;">
+        🌟 ${escH(label)}
+        <button onclick="removeOffDay('${escJ(dk)}')" style="background:none;border:none;color:#b35c00;cursor:pointer;font-size:13px;line-height:1;">✕</button>
+      </span>`;
+    }).join('');
+  }
+}
+
+async function removeOffDay(dk){
+  offDayDates.delete(dk);
+  await fbDelete('/meta/offdays/'+safeKey(dk));
+  renderOffDayTab();
+  renderStrip();
+  if(dk===selectedDate){updateOffDayToggleBtn();renderCalTab();}
+}
+
+// ── OFF DAY SYSTEM END ────────────────────────────────
+
+// ── INIT ─────────────────────────────────────────────
+async function init(){
+  document.getElementById('at-task-date').value=selectedDate;
+  setSyncStatus('syncing');
+
+  // Load today + everyday + done overrides + offday in parallel
+  const [tasks, evTasks, overrides] = await Promise.all([
+    dbLoadDate(selectedDate),
+    dbLoadDate('everyday'),
+    dbLoadDate('done_overrides/'+safeKey(selectedDate))
+  ]);
+  setCT(selectedDate, tasks);
+  setCT('everyday', evTasks);
+  cache['done_overrides/'+selectedDate] = Array.isArray(overrides)
+    ? Object.fromEntries(overrides.map(o=>[o.id,o]))
+    : (overrides||{});
+
+  // Load offday template + marked dates
+  await loadOffDayData();
+
+  renderStrip();renderCalTab();
+  setTimeout(()=>{const s=document.querySelector('#day-strip .selected');if(s)s.scrollIntoView({inline:'center',behavior:'smooth'});},120);
+
+  // Auto-refresh every 15 minutes
+  setInterval(()=>manualRefresh(), 15*60*1000);
+
+  // Start Realtime listeners
+  startListening(selectedDate);
+
+  // Listen to everyday tasks
+  fbListen('/tasks/everyday', async()=>{
+    const ev=await dbLoadDate('everyday');
+    setCT('everyday',ev);
+    renderCalTab();
+    if(currentTab==='all')renderAllTab();
+  });
+
+  // Listen to offday template tasks
+  fbListen('/tasks/offday', async()=>{
+    const od=await dbLoadDate('offday');
+    setCT('offday', od||[]);
+    renderCalTab();
+    if(currentTab==='offday')renderOffDayTab();
+  });
+
+  // Listen to offday template tasks
+  fbListen('/tasks/offday', async()=>{
+    const od=await dbLoadDate('offday');
+    setCT('offday',od||[]);
+    renderCalTab();
+    if(currentTab==='offday')renderOffDayTab();
+  });
+
+  // Listen to offday marked dates
+  fbListen('/meta/offdays', async()=>{
+    const odDates=await fbGet('/meta/offdays');
+    offDayDates=new Set(odDates?Object.keys(odDates).map(k=>k.replace(/_/g,'-')):[]);
+    renderCalTab();renderStrip();
+    if(currentTab==='offday')renderOffDayTab();
+  });
+  fbListen('/tasks/done_overrides/'+safeKey(selectedDate), async()=>{
+    const ov=await dbLoadDate('done_overrides/'+safeKey(selectedDate));
+    cache['done_overrides/'+selectedDate]=Array.isArray(ov)
+      ?Object.fromEntries(ov.map(o=>[o.id,o])):(ov||{});
+    renderCalTab();
+  });
+}
+
+// ── ALARM / NOTIFICATION SYSTEM ──────────────────────
+let alarmCheckInterval=null;
+let firedAlarms=new Set(); // prevent duplicate firing
+
+let swRegistration=null;
+
+async function registerServiceWorker(){
+  if(!('serviceWorker' in navigator))return;
+  try{
+    swRegistration=await navigator.serviceWorker.register('/HAbit-Track/sw.js', {scope: '/HAbit-Track/'});
+    await navigator.serviceWorker.ready;
+    console.log('[SW] Registered');
+  }catch(e){console.warn('[SW] Register failed',e);}
+}
+
+async function requestNotificationPermission(){
+  if(!('Notification' in window))return false;
+  if(Notification.permission==='granted')return true;
+  if(Notification.permission==='denied')return false;
+  const result=await Notification.requestPermission();
+  return result==='granted';
+}
+
+function sendNotification(title, body, tag){
+  // Try via Service Worker first (works on mobile)
+  if(swRegistration && swRegistration.active){
+    swRegistration.active.postMessage({type:'SHOW_NOTIFICATION', title, body, tag});
+    return;
+  }
+  // Fallback: direct Notification API (desktop)
+  if(Notification.permission==='granted'){
+    const n=new Notification(title,{body, tag, requireInteraction:true, icon:'/HAbit-Track/icon-192.png'});
+    n.onclick=()=>{window.focus();n.close();};
+  }
+}
+
+function playAlarmSound(){
+  try{
+    const ctx=new(window.AudioContext||window.webkitAudioContext)();
+    // Simple beep sequence
+    [0,0.3,0.6].forEach(delay=>{
+      const osc=ctx.createOscillator();
+      const gain=ctx.createGain();
+      osc.connect(gain);gain.connect(ctx.destination);
+      osc.type='sine';osc.frequency.value=880;
+      gain.gain.setValueAtTime(0.4,ctx.currentTime+delay);
+      gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+delay+0.25);
+      osc.start(ctx.currentTime+delay);
+      osc.stop(ctx.currentTime+delay+0.25);
+    });
+  }catch(e){}
+}
+
+function checkAlarms(){
+  const now=new Date();
+  // Only check for today
+  const todayKey=dateKey(today);
+  if(selectedDate!==todayKey)return;
+
+  const all=[
+    ...getCT('everyday').map(t=>({...t,_fromEveryday:true})),
+    ...getCT(selectedDate)
+  ];
+
+  all.forEach(t=>{
+    // Only todo tasks with a time set
+    if(t.status!=='todo')return;
+    const h=parseInt(t.timeH)||0, m=parseInt(t.timeM)||0;
+    if(!h&&!m&&!t.timeH)return;
+    const ampm=t.ampm||'AM';
+
+    // Convert to today's Date object
+    let h24=h;
+    if(ampm==='AM'){if(h===12)h24=0;}else{if(h!==12)h24=h+12;}
+    const taskTime=new Date();
+    taskTime.setHours(h24,m,0,0);
+
+    // Fire alarm at exact task time (within 60s window)
+    const diffMs=taskTime-now;
+    const alarmKey=t.id+'_'+taskTime.getTime();
+
+    if(diffMs>=-5000 && diffMs<=60000 && !firedAlarms.has(alarmKey)){
+      firedAlarms.add(alarmKey);
+      fireAlarm(t, taskTime);
+    }
+  });
+
+  // Clean up old alarm keys (older than 2 hours)
+  const twoHrsAgo=Date.now()-7200000;
+  firedAlarms.forEach(k=>{
+    const ts=parseInt(k.split('_').pop());
+    if(ts && ts<twoHrsAgo)firedAlarms.delete(k);
+  });
+}
+
+// Alarm queue — multiple alarms fire → show one by one
+let alarmQueue=[];
+let alarmPopupOpen=false;
+
+function closeAlarmPopup(){
+  alarmPopupOpen=false;
+  const el=document.getElementById('alarm-popup');
+  el.classList.remove('alarm-visible');
+  el.classList.add('alarm-hidden');
+  if(alarmQueue.length>0){
+    setTimeout(()=>showAlarmPopup(alarmQueue.shift()),400);
+  }
+}
+
+function showAlarmPopup(item){
+  alarmPopupOpen=true;
+  document.getElementById('alarm-time-label').textContent='⏰ '+item.timeStr;
+  document.getElementById('alarm-task-name').textContent=item.name;
+  document.getElementById('alarm-priority-label').textContent=item.priority;
+  document.getElementById('alarm-notes-label').textContent=item.notes||'';
+  const pending=alarmQueue.length;
+  document.getElementById('alarm-pending-label').textContent=pending>0?`තවත් alarm ${pending}ක් pending`:'';
+  const el=document.getElementById('alarm-popup');
+  el.classList.remove('alarm-hidden');
+  el.classList.add('alarm-visible');
+  const inner=document.getElementById('alarm-inner');
+  inner.classList.remove('pulse');
+  void inner.offsetWidth;
+  inner.classList.add('pulse');
+}
+
+function fireAlarm(task,taskTime){
+  const h=parseInt(task.timeH)||0,m=parseInt(task.timeM)||0;
+  const ampm=task.ampm||'AM';
+  const timeStr=fmt12(h,m,ampm);
+  const priLabel=task.priority==='high'?'🔥 High Priority':task.priority==='medium'?'📌 Medium Priority':'🧘 Low Priority';
+
+  // Play beep sound
+  playAlarmSound();
+
+  // Browser/SW notification (works background + mobile)
+  if(Notification.permission==='granted'){
+    sendNotification('⏰ '+timeStr+' — '+task.name, priLabel+(task.notes?' | '+task.notes:''), task.id);
+  }
+
+  // In-page persistent popup
+  const item={timeStr,name:task.name,priority:priLabel,notes:task.notes||''};
+  if(alarmPopupOpen){
+    alarmQueue.push(item);
+  } else {
+    showAlarmPopup(item);
+  }
+}
+
+async function startAlarmSystem(){
+  // Register Service Worker first (needed for mobile notifications)
+  await registerServiceWorker();
+  
+  const granted=await requestNotificationPermission();
+  if(alarmCheckInterval)clearInterval(alarmCheckInterval);
+  alarmCheckInterval=setInterval(checkAlarms,30000);
+  checkAlarms();
+
+  const dot=document.getElementById('sync-dot');
+  if(dot&&granted){
+    const bell=document.createElement('span');
+    bell.id='alarm-bell';
+    bell.textContent='🔔';
+    bell.title='Alarm active — task time වලදී notification ලැබේ';
+    bell.style.cssText='font-size:16px;cursor:default;';
+    dot.parentNode.insertBefore(bell,dot);
+  }
+}
+
+init();
+startAlarmSystem();
+</script>
+</body>
+</html>
