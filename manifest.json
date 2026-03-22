@@ -1,0 +1,19 @@
+{
+  "name": "To Do List",
+  "short_name": "ToDo",
+  "description": "Daily Task Manager",
+  "start_url": "/HAbit-Track/",
+  "scope": "/HAbit-Track/",
+  "display": "standalone",
+  "background_color": "#f5fafa",
+  "theme_color": "#1d5e58",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/HAbit-Track/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
